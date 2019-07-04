@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"> <html lang="en">
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+        <title>Pipe Tune Name Generator</title>
+    </head>
+    <body onload="generateName()">
+        <h1 id="name"></h1>
+
+        <script>
+            /*
+             * Applies a rule, returning a string that the rule produces.
+             * If the given rule is a string, that is returned directly.
+             */
+            function apply(rule) {
+                if (typeof rule === 'string') {
+                    return rule;
+                }
+
+                // Execute the rule
+                return rule();
+            }
+
+            /*
+             * Rule which returns the concatenation of each result from a list of rules.
+             */
+            function concat(rules) {
+                return () => {
+                    return rules.map(rule => apply(rule)).join('');
+                }
+            }
+
+            /*
+             * Rule which randomly selects from a list of alternatives.
+             */
+            function oneOf(rules) {
+                const index = Math.floor(Math.random() * rules.length);
+                const rule = rules[index];
+
+                return () => apply(rule);
+            }
+
+            /*
+             * Rule which wraps a rule and will execute it 50% of the time, or return an empty string.
+             */
+            function maybe(rule) {
+                return () => {
+                    return Math.random() > 0.5
+                            ? rule()
+                            : '';
+                }
+            }
+
+            // Atoms
+            const SURNAME = oneOf(['MacMillon', 'MacDonald', 'MacColl', 'MacKenzie', 'Cameron', 'Crawford']);
+            const MAN_FIRST_NAME = oneOf(["John", "Ian", "Angus", "Duncan", 'Donald', 'Ada']);
+            const WOMAN_FIRST_NAME = oneOf(['Madalina', 'Maggie', 'Mary', 'Dolina', 'Donella']);
+            const PLACENAME = oneOf(['South Uist', 'Barra', 'Aberdeen', 'Kilbowie Cottage', 'Glendaruel']);
+            const REGIMENT_NUMBER = oneOf(['72nd', '73rd', '74th', '75th', '76th', '78th', '79th']);
+            const REGIMENT_NAME = oneOf(['Highlanders']);
+
+            // Intermediate rules - person
+            const MAN = concat([MAN_FIRST_NAME, ' ', SURNAME]);
+            const WOMAN = concat([WOMAN_FIRST_NAME, ' ', SURNAME]);
+            const LORD = concat(['Lord ', MAN]);
+            const LADY = concat(['Lady ', WOMAN])
+            const MILITARY_MAN = concat([
+                    oneOf(['Captain ', 'Lt. Col. ', 'Major ', 'Pipe Major ']),
+                    MAN, 
+                    maybe(concat([' of ', PLACENAME]))
+            ]);
+            const PERSON = oneOf([MAN, WOMAN, LORD, LADY, MILITARY_MAN])
+
+            // Other intermediate rules
+            const REGIMENT = concat(['The ', REGIMENT_NUMBER, ' ', REGIMENT_NAME])
+            const ENTITY = oneOf([MAN, REGIMENT]);
+            const HILLS = concat(['The Hills of ', PLACENAME]);
+
+            // Tune name rules
+            const LAMENT = concat(['Lament for ', MAN, maybe(concat([' of ', PLACENAME]))]);
+            const WELCOME = concat([ENTITY, '\'s Welcome to ', PLACENAME]);
+            const HIGHLANDERS = concat(['The ', PLACENAME, ' Highlanders']);
+
+            // Top-level rule used to generate tune names
+            const ROOT = oneOf([
+                    LAMENT,
+                    WELCOME,
+                    PERSON,
+                    HILLS,
+                    HIGHLANDERS
+            ]);
+
+            function generateName() {
+                const tuneName = ROOT();
+
+                document.getElementById('name').innerHTML = tuneName;
+            }
+        </script>
+    </body>
+</html>
